@@ -6,6 +6,9 @@
 #include "GameFramework/Character.h"
 #include "UE4GameFuncsCharacter.generated.h"
 
+UENUM()
+enum class CameraSelection : uint8 { Third, First };
+
 UCLASS(config=Game)
 class AUE4GameFuncsCharacter : public ACharacter
 {
@@ -18,6 +21,7 @@ class AUE4GameFuncsCharacter : public ACharacter
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FollowCamera;
+
 public:
 	AUE4GameFuncsCharacter();
 
@@ -31,8 +35,7 @@ public:
 
 protected:
 
-	/** Resets HMD orientation in VR. */
-	void OnResetVR();
+	void ChangeCamera();
 
 	/** Called for forwards/backward input */
 	void MoveForward(float Value);
@@ -68,5 +71,10 @@ public:
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+private:
+
+	UPROPERTY()
+	CameraSelection CurrentCameraSelection;
 };
 

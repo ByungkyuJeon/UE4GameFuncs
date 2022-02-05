@@ -7,6 +7,7 @@
 #include "Components/InputComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
+#include "Kismet/GameplayStatics.h"
 #include "GameFramework/SpringArmComponent.h"
 
 //////////////////////////////////////////////////////////////////////////
@@ -39,9 +40,11 @@ AUE4GameFuncsCharacter::AUE4GameFuncsCharacter()
 	CameraBoom->bUsePawnControlRotation = true; // Rotate the arm based on the controller
 
 	// Create a follow camera
-	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
+	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("ThirdPersonCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
+
+	CurrentCameraSelection = CameraSelection::Third;
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named MyCharacter (to avoid direct content references in C++)
@@ -54,6 +57,9 @@ void AUE4GameFuncsCharacter::SetupPlayerInputComponent(class UInputComponent* Pl
 {
 	// Set up gameplay key bindings
 	check(PlayerInputComponent);
+
+	PlayerInputComponent->BindAction("ChangeCamera", IE_Pressed, this, &AUE4GameFuncsCharacter::ChangeCamera);
+
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 
@@ -67,25 +73,6 @@ void AUE4GameFuncsCharacter::SetupPlayerInputComponent(class UInputComponent* Pl
 	PlayerInputComponent->BindAxis("TurnRate", this, &AUE4GameFuncsCharacter::TurnAtRate);
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 	PlayerInputComponent->BindAxis("LookUpRate", this, &AUE4GameFuncsCharacter::LookUpAtRate);
-
-	// handle touch devices
-	PlayerInputComponent->BindTouch(IE_Pressed, this, &AUE4GameFuncsCharacter::TouchStarted);
-	PlayerInputComponent->BindTouch(IE_Released, this, &AUE4GameFuncsCharacter::TouchStopped);
-
-	// VR headset functionality
-	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &AUE4GameFuncsCharacter::OnResetVR);
-}
-
-
-void AUE4GameFuncsCharacter::OnResetVR()
-{
-	// If UE4GameFuncs is added to a project via 'Add Feature' in the Unreal Editor the dependency on HeadMountedDisplay in UE4GameFuncs.Build.cs is not automatically propagated
-	// and a linker error will result.
-	// You will need to either:
-	//		Add "HeadMountedDisplay" to [YourProject].Build.cs PublicDependencyModuleNames in order to build successfully (appropriate if supporting VR).
-	// or:
-	//		Comment or delete the call to ResetOrientationAndPosition below (appropriate if not supporting VR)
-	UHeadMountedDisplayFunctionLibrary::ResetOrientationAndPosition();
 }
 
 void AUE4GameFuncsCharacter::TouchStarted(ETouchIndex::Type FingerIndex, FVector Location)
@@ -108,6 +95,24 @@ void AUE4GameFuncsCharacter::LookUpAtRate(float Rate)
 {
 	// calculate delta for this frame from the rate information
 	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
+}
+
+void AUE4GameFuncsCharacter::ChangeCamera()
+{
+	if (CurrentCameraSelection == CameraSelection::Third)
+	{
+		CurrentCameraSelection = CameraSelection::First;
+		CameraBoom->TargetArmLength = -10;
+		FollowCamera->bUsePawnControlRotation = true;
+		FollowCamera->AddLocalOffset(FVector(0.0f, 0.0f, 90.0f));
+		
+		return;
+	}
+
+	CurrentCameraSelection = CameraSelection::Third;
+	CameraBoom->TargetArmLength = 300;
+	FollowCamera->bUsePawnControlRotation = false;
+	FollowCamera->AddLocalOffset(FVector(0.0f, 0.0f, -90.0f));
 }
 
 void AUE4GameFuncsCharacter::MoveForward(float Value)
