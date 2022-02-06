@@ -61,6 +61,8 @@ protected:
 	/** Handler for when a touch input stops. */
 	void TouchStopped(ETouchIndex::Type FingerIndex, FVector Location);
 
+	void Tick(float DeltaTime);
+
 protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -76,5 +78,8 @@ private:
 
 	UPROPERTY()
 	CameraSelection CurrentCameraSelection;
+
+	UPROPERTY(EditAnywhere, Category = Camera)
+	float CameraSwithingSpeed;
 };
 

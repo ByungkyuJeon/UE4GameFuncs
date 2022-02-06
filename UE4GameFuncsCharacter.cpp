@@ -15,6 +15,8 @@
 
 AUE4GameFuncsCharacter::AUE4GameFuncsCharacter()
 {
+	SetActorTickEnabled(true);
+
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 
@@ -45,6 +47,8 @@ AUE4GameFuncsCharacter::AUE4GameFuncsCharacter()
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
 	CurrentCameraSelection = CameraSelection::Third;
+
+	CameraSwithingSpeed = 200;
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named MyCharacter (to avoid direct content references in C++)
@@ -85,6 +89,22 @@ void AUE4GameFuncsCharacter::TouchStopped(ETouchIndex::Type FingerIndex, FVector
 		StopJumping();
 }
 
+void AUE4GameFuncsCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (CurrentCameraSelection == CameraSelection::Third && CameraBoom->TargetArmLength < 300)
+	{
+		CameraBoom->TargetArmLength += DeltaTime * CameraSwithingSpeed;
+		FollowCamera->SetRelativeLocation(FVector(0, 0, (1 - (CameraBoom->TargetArmLength + 11) / 310) * 80));
+	}
+	else if(CurrentCameraSelection == CameraSelection::First && CameraBoom->TargetArmLength > -10)
+	{
+		CameraBoom->TargetArmLength -= DeltaTime * CameraSwithingSpeed;
+		FollowCamera->SetRelativeLocation(FVector(0, 0, (1 - (CameraBoom->TargetArmLength + 11) / 310) * 80));
+	}
+}
+
 void AUE4GameFuncsCharacter::TurnAtRate(float Rate)
 {
 	// calculate delta for this frame from the rate information
@@ -102,17 +122,13 @@ void AUE4GameFuncsCharacter::ChangeCamera()
 	if (CurrentCameraSelection == CameraSelection::Third)
 	{
 		CurrentCameraSelection = CameraSelection::First;
-		CameraBoom->TargetArmLength = -10;
 		FollowCamera->bUsePawnControlRotation = true;
-		FollowCamera->AddLocalOffset(FVector(0.0f, 0.0f, 90.0f));
 		
 		return;
 	}
 
 	CurrentCameraSelection = CameraSelection::Third;
-	CameraBoom->TargetArmLength = 300;
 	FollowCamera->bUsePawnControlRotation = false;
-	FollowCamera->AddLocalOffset(FVector(0.0f, 0.0f, -90.0f));
 }
 
 void AUE4GameFuncsCharacter::MoveForward(float Value)
